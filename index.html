@@ -932,16 +932,15 @@
                 <div class="status-badge" id="user-count-status">
                     Cargando participantes...
                 </div>
-                <button class="sim-btn" onclick="simulateGroup()">⚡ Autocompletar cupo (+5 Simulado)</button>
+                <button class="sim-btn" onclick="simulateGroup()">⚡ Autocompletar cupo (1 Simulado)</button>
             </div>
 
             <!-- FORMULARIO ADMIN -->
             <div id="form-admin" style="display: none;">
-                <div class="input-group">
-                    <label>CONTRASEÑA DE ADMINISTRADOR</label>
-                    <input type="password" id="admin-pass" placeholder="Ingresá la clave de acceso">
-                </div>
-                <button class="btn-action" onclick="loginAdmin()">ACCEDER AL PANEL</button>
+                <p style="color: var(--text-gray); font-size: 0.8rem; margin-bottom: 20px;">
+                    Acceso libre al Panel de Control de Administración (Límite: Mínimo 0, Máximo 1 administrador).
+                </p>
+                <button class="btn-action" onclick="loginAdmin()">ACCEDER AL PANEL DE ADMINISTRADOR</button>
             </div>
         </div>
     </div>
@@ -958,7 +957,7 @@
 
         <div class="admin-grid">
             <div class="admin-card">
-                <h4>USUARIOS ACTIVOS</h4>
+                <h4>PARTICIPANTES ACTIVOS</h4>
                 <div class="val" id="adm-active-count">0 / 50</div>
             </div>
             <div class="admin-card">
@@ -970,8 +969,8 @@
                 <div class="val" id="adm-vote-r">0</div>
             </div>
             <div class="admin-card">
-                <h4>ESTADO CUPO (MIN 5)</h4>
-                <div class="val" id="adm-status-quota" style="font-size: 1.2rem; margin-top: 10px;">INCOMPLETO</div>
+                <h4>ESTADO CUPO (MIN 5 / MAX 50)</h4>
+                <div class="val" id="adm-status-quota" style="font-size: 1.2rem; margin-top: 10px;">INSUFICIENTE (0/50)</div>
             </div>
         </div>
 
@@ -991,7 +990,7 @@
         </table>
 
         <div style="margin-top: 25px; display: flex; gap: 15px;">
-            <button class="btn-action" style="background: #111726; color: #fff; border: 1px solid var(--border-color);" onclick="simulateGroup()">+ Cargar Participantes Simulados</button>
+            <button class="btn-action" style="background: #111726; color: #fff; border: 1px solid var(--border-color);" onclick="simulateGroup()">+ Cargar 1 Participante Simulado</button>
             <button class="btn-action" style="background: var(--red); color: #fff;" onclick="resetAllData()">Resetear Todos los Datos</button>
         </div>
     </div>
@@ -1103,7 +1102,7 @@
             <div class="cloud-tag md" onclick="showCloudWord('Sufragio', 'El voto libre, directo y secreto que garantiza la participación equitativa de todos.')">Sufragio</div>
             <div class="cloud-tag lg" onclick="showCloudWord('Transparencia', 'Acceso libre a la información pública para garantizar la honestidad de las instituciones.')">Transparencia</div>
             <div class="cloud-tag sm" onclick="showCloudWord('Comunidad', 'Conjunto de personas que comparten metas e impactos comunes en su entorno.')">Comunidad</div>
-            <div class="cloud-tag md" onclick="showCloudWord('TSE', 'Tribunal Supremo de Elecciones: Organo independiente garante de las elecciones en Costa Rica.')">TSE</div>
+            <div class="cloud-tag md" onclick="showCloudWord('TSE', 'Tribunal Supremo de Elecciones: Órgano independiente garante de las elecciones en Costa Rica.')">TSE</div>
             <div class="cloud-tag lg" onclick="showCloudWord('Inclusión', 'Garantizar que todas las personas tengan voz y voto sin discriminación.')">Inclusión</div>
             <div class="cloud-tag sm" onclick="showCloudWord('Derechos', 'Garantías fundamentales que protegen la libertad y dignidad de cada ciudadano.')">Derechos</div>
             <div class="cloud-tag md" onclick="showCloudWord('Voto Informado', 'La práctica consciente de analizar propuestas antes de tomar una decisión en las urnas.')">Voto Informado</div>
@@ -1401,11 +1400,11 @@
             const statusEl = document.getElementById("user-count-status");
             
             if (count < 5) {
-                statusEl.innerHTML = `<span style="color: var(--gold);">Activos: ${count} / 50</span><br>Al ingresar se autocompletará el mínimo de 5 participantes.`;
-            } else if (count > 50) {
-                statusEl.innerHTML = `<span style="color: var(--red);">Cupo lleno (${count}/50)</span>`;
+                statusEl.innerHTML = `<span style="color: var(--gold);">Participantes: ${count} / 50</span><br>Se requieren al menos 5 participantes (Faltan ${5 - count}).`;
+            } else if (count < 50) {
+                statusEl.innerHTML = `<span style="color: var(--green);">Participantes: ${count} / 50</span><br>¡Cupo válido! Quedan ${50 - count} lugares.`;
             } else {
-                statusEl.innerHTML = `<span style="color: var(--green);">Cupo alcanzado: ${count} / 50</span><br>¡Sistema listo para iniciar!`;
+                statusEl.innerHTML = `<span style="color: var(--red);">Cupo lleno: 50 / 50</span><br>Se alcanzó el límite máximo de participantes.`;
             }
         }
 
@@ -1431,24 +1430,6 @@
             };
 
             state.users.push(currentUser);
-
-            // Si aún no se alcanza el mínimo de 5 usuarios, autocompletar simulados automáticamente
-            if (state.users.length < 5) {
-                const namesSim = ["Carlos R.", "Sofía V.", "Mateo L.", "Lucía M.", "Gabriel K."];
-                const needed = 5 - state.users.length;
-                for (let i = 0; i < needed; i++) {
-                    const randomVote = Math.random() > 0.5 ? 'horizonte' : 'raices';
-                    state.users.push({
-                        id: 'sim_' + Math.random().toString(36).substr(2, 5),
-                        name: namesSim[i % namesSim.length] + ` (Simulado)`,
-                        voted: randomVote,
-                        time: new Date().toLocaleTimeString()
-                    });
-                    if(randomVote === 'horizonte') state.votes.horizonte++;
-                    else state.votes.raices++;
-                }
-            }
-
             saveState(state);
 
             document.getElementById("active-user-display").textContent = currentUser.name;
@@ -1463,33 +1444,27 @@
                 return;
             }
 
-            const countToAdd = Math.min(5, 50 - state.users.length);
-            const namesSim = ["Carlos R.", "Sofía V.", "Mateo L.", "Lucía M.", "Gabriel K.", "Valeria N.", "Diego B."];
+            const namesSim = ["Carlos R.", "Sofía V.", "Mateo L.", "Lucía M.", "Gabriel S.", "Valeria N."];
+            const randomName = namesSim[Math.floor(Math.random() * namesSim.length)];
+            const randomVote = Math.random() > 0.5 ? 'horizonte' : 'raices';
 
-            for(let i = 0; i < countToAdd; i++) {
-                const randomVote = Math.random() > 0.5 ? 'horizonte' : 'raices';
-                state.users.push({
-                    id: 'sim_' + Math.random().toString(36).substr(2, 5),
-                    name: namesSim[i % namesSim.length] + ` (${state.users.length + 1})`,
-                    voted: randomVote,
-                    time: new Date().toLocaleTimeString()
-                });
-                if(randomVote === 'horizonte') state.votes.horizonte++;
-                else state.votes.raices++;
-            }
+            state.users.push({
+                id: 'sim_' + Math.random().toString(36).substr(2, 5),
+                name: randomName + " (Simulado)",
+                voted: randomVote,
+                time: new Date().toLocaleTimeString()
+            });
+
+            if(randomVote === 'horizonte') state.votes.horizonte++;
+            else state.votes.raices++;
 
             saveState(state);
-            alert(`Se agregaron ${countToAdd} participantes simulados con éxito.`);
+            alert("Se agregó 1 participante simulado con éxito.");
         }
 
         function loginAdmin() {
-            const pass = document.getElementById("admin-pass").value;
-            if(pass === "zylic") {
-                updateAdminDashboard();
-                document.getElementById("admin-panel").style.display = "block";
-            } else {
-                alert("Contraseña de administrador incorrecta.");
-            }
+            updateAdminDashboard();
+            document.getElementById("admin-panel").style.display = "block";
         }
 
         function closeAdmin() {
@@ -1503,12 +1478,15 @@
             document.getElementById("adm-vote-r").textContent = state.votes.raices || 0;
 
             const quotaEl = document.getElementById("adm-status-quota");
-            if(state.users.length >= 5 && state.users.length <= 50) {
-                quotaEl.textContent = "LISTO (5-50)";
+            if (state.users.length >= 50) {
+                quotaEl.textContent = "CUPO LLENO (50/50)";
+                quotaEl.style.color = "var(--red)";
+            } else if (state.users.length >= 5) {
+                quotaEl.textContent = `CUPO VÁLIDO (${state.users.length}/50)`;
                 quotaEl.style.color = "var(--green)";
             } else {
-                quotaEl.textContent = "INCOMPLETO";
-                quotaEl.style.color = "var(--red)";
+                quotaEl.textContent = `INSUFICIENTE (${state.users.length}/50)`;
+                quotaEl.style.color = "var(--gold)";
             }
 
             const tbody = document.getElementById("adm-table-body");
@@ -1897,7 +1875,6 @@
                 const state = getState();
                 const u = state.users.find(usr => usr.id === currentUser.id);
                 if (u && u.voted !== selectedProject) {
-                    // Si ya había votado por otro proyecto, descontar el voto anterior
                     if (u.voted === 'horizonte') state.votes.horizonte = Math.max(0, (state.votes.horizonte || 0) - 1);
                     if (u.voted === 'raices') state.votes.raices = Math.max(0, (state.votes.raices || 0) - 1);
 
