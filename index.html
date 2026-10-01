@@ -1362,7 +1362,7 @@
     <!-- SCRIPT LOGIC -->
     <script>
         /* =========================================================
-           1. STATE MANAGEMENT & LOCAL STORAGE (MIN 5, MAX 50)
+           1. STATE MANAGEMENT & LOCAL STORAGE
         ========================================================= */
         const STORAGE_KEY = "CIVICLAB_STATE_2026_V3";
         let currentUser = null;
@@ -1401,7 +1401,7 @@
             const statusEl = document.getElementById("user-count-status");
             
             if (count < 5) {
-                statusEl.innerHTML = `<span style="color: var(--red);">Activos: ${count} / 50</span><br>Se requieren al menos 5 participantes para iniciar.`;
+                statusEl.innerHTML = `<span style="color: var(--gold);">Activos: ${count} / 50</span><br>Al ingresar se autocompletará el mínimo de 5 participantes.`;
             } else if (count > 50) {
                 statusEl.innerHTML = `<span style="color: var(--red);">Cupo lleno (${count}/50)</span>`;
             } else {
@@ -1423,11 +1423,6 @@
                 return;
             }
 
-            if (state.users.length < 5) {
-                alert(`Actualmente hay ${state.users.length} participantes registrados. Se requiere un mínimo de 5. Usá el botón "Autocompletar cupo" para simular el resto.`);
-                return;
-            }
-
             currentUser = {
                 id: 'usr_' + Date.now(),
                 name: nameInput,
@@ -1436,6 +1431,24 @@
             };
 
             state.users.push(currentUser);
+
+            // Si aún no se alcanza el mínimo de 5 usuarios, autocompletar simulados automáticamente
+            if (state.users.length < 5) {
+                const namesSim = ["Carlos R.", "Sofía V.", "Mateo L.", "Lucía M.", "Gabriel K."];
+                const needed = 5 - state.users.length;
+                for (let i = 0; i < needed; i++) {
+                    const randomVote = Math.random() > 0.5 ? 'horizonte' : 'raices';
+                    state.users.push({
+                        id: 'sim_' + Math.random().toString(36).substr(2, 5),
+                        name: namesSim[i % namesSim.length] + ` (Simulado)`,
+                        voted: randomVote,
+                        time: new Date().toLocaleTimeString()
+                    });
+                    if(randomVote === 'horizonte') state.votes.horizonte++;
+                    else state.votes.raices++;
+                }
+            }
+
             saveState(state);
 
             document.getElementById("active-user-display").textContent = currentUser.name;
@@ -1445,20 +1458,19 @@
 
         function simulateGroup() {
             const state = getState();
-            const needed = Math.max(5 - state.users.length, 5);
-            
-            if (state.users.length + needed > 50) {
-                alert("Superaría el cupo máximo de 50 usuarios.");
+            if (state.users.length >= 50) {
+                alert("Cupo máximo de 50 usuarios alcanzado.");
                 return;
             }
 
+            const countToAdd = Math.min(5, 50 - state.users.length);
             const namesSim = ["Carlos R.", "Sofía V.", "Mateo L.", "Lucía M.", "Gabriel K.", "Valeria N.", "Diego B."];
 
-            for(let i = 0; i < needed; i++) {
+            for(let i = 0; i < countToAdd; i++) {
                 const randomVote = Math.random() > 0.5 ? 'horizonte' : 'raices';
                 state.users.push({
                     id: 'sim_' + Math.random().toString(36).substr(2, 5),
-                    name: namesSim[i % namesSim.length] + ` (${i+1})`,
+                    name: namesSim[i % namesSim.length] + ` (${state.users.length + 1})`,
                     voted: randomVote,
                     time: new Date().toLocaleTimeString()
                 });
@@ -1467,7 +1479,7 @@
             }
 
             saveState(state);
-            alert(`Se agregaron ${needed} participantes simulados con éxito.`);
+            alert(`Se agregaron ${countToAdd} participantes simulados con éxito.`);
         }
 
         function loginAdmin() {
@@ -1516,6 +1528,7 @@
         function resetAllData() {
             if(confirm("¿Estás seguro de resetear todos los datos de participación?")) {
                 localStorage.removeItem(STORAGE_KEY);
+                currentUser = null;
                 updateAdminDashboard();
                 updateUserCountUI();
             }
@@ -1586,7 +1599,11 @@
         ========================================================= */
         const canvasP = document.getElementById("particles");
         const ctxP = canvasP.getContext("2d");
+        const canvasC = document.getElementById("confetti-canvas");
+        const ctxC = canvasC.getContext("2d");
+
         let particles = [];
+        let confettiPieces = [];
 
         function resizeCanvas() {
             canvasP.width = window.innerWidth;
@@ -1619,10 +1636,6 @@
         animateParticles();
 
         /* CONFETTI ENGINE Pure JS */
-        const canvasC = document.getElementById("confetti-canvas");
-        const ctxC = canvasC.getContext("2d");
-        let confettiPieces = [];
-
         function triggerConfetti() {
             confettiPieces = [];
             const colors = ['#65eaff', '#8c52ff', '#00ff88', '#ff3366', '#ffcc00'];
@@ -1883,7 +1896,11 @@
             if (currentUser) {
                 const state = getState();
                 const u = state.users.find(usr => usr.id === currentUser.id);
-                if (u) {
+                if (u && u.voted !== selectedProject) {
+                    // Si ya había votado por otro proyecto, descontar el voto anterior
+                    if (u.voted === 'horizonte') state.votes.horizonte = Math.max(0, (state.votes.horizonte || 0) - 1);
+                    if (u.voted === 'raices') state.votes.raices = Math.max(0, (state.votes.raices || 0) - 1);
+
                     u.voted = selectedProject;
                     if(selectedProject === 'horizonte') state.votes.horizonte = (state.votes.horizonte || 0) + 1;
                     else state.votes.raices = (state.votes.raices || 0) + 1;
